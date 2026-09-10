@@ -1,0 +1,21 @@
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.promedio {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vacio {
+  color: #757575;
+}
