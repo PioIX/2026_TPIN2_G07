@@ -1,78 +1,28 @@
-# 2026_TPIN2_G07
-Trabajo Practico integrador: WhatsApp
-# WhatsApp
+# Backend TP2 - Pio Socket
 
-Aplicación de chat en tiempo real 
-El proyecto es una aplicación similar a WhatsApp que permite a los usuarios  se registren, inicien sesión, visualizar sus conversaciones, crear chats individuales y grupales, consultar el historial de mensajes y comunicarse en tiempo real.
+Backend base (Node.js + Express + Socket.IO) que se entrega a los alumnos para el **Trabajo Práctico N°2**, tal como se explica en el **Apunte 09 – Sockets**.
 
-## Metodos 
+## Eventos
 
-* **Frontend:** Next.js + React
-* **Backend:** Node.js
-* **Base de datos:** MySQL
-* **Comunicación en tiempo real:** Socket.IO / WebSockets
-* **Estilos:** CSS
-* **Control de versiones:** Git + GitHub
+- `pingAll`: reenvía el mensaje recibido a **todos** los clientes conectados.
+- `joinRoom`: une al socket a una sala (`room`), sacándolo antes de la sala anterior si tenía una.
+- `sendMessage`: reenvía el mensaje a todos los clientes de la sala actual.
+- `eventoPersonalizado`: incrementa un contador y responde con `respuestaPersonalizada` (el contador es por cliente, no compartido).
 
-## Funciones
+## Cómo iniciarlo
 
-### Usuarios
-
-* Registro de nuevos usuarios.
-* Inicio de sesión mediante mail y contraseña.
-* Perfil con nombre de usuario y foto.
-
-### Chats
-
-* Visualización de los chats del usuario.
-* Creación de chats individuales mediante el mail de otro usuario.
-* Creación de chats grupales mediante múltiples mails.
-* Nombre y foto para los grupos.
-* Foto por defecto cuando un chat no posee imagen.
-
-###  Chat en tiempo real
-
-* Visualización del historial de mensajes almacenado en MySQL.
-* Envío y recepción de mensajes mediante Socket.IO.
-* Los mensajes aparecen en tiempo real para los usuarios que tienen abierto el mismo chat.
-* Los mensajes enviados se almacenan en la base de datos para conservar el historial.
-
-##  Base de datos
-
-Una base de datos MySQL con tablas relacionadas para representar:
-
-* Usuarios
-* Chats / conversaciones
-* Mensajes
-* Integrantes de los chats
-
-
-## Integrantes
-
-* Sofia Streuli 
-* Catlina Gonzalez Cerezal
-* Avril Polvera
-* Felicitas Scarfo
-
-## 📁 Estructura del proyecto
-
-```text
-proyecto/
-│
-├── frontend/src
-│   ├── app/
-│   ├── components/
-│   ├── hooks
-│   └── ...
-│
-├── backend/
-│   ├── index.js
-│   └── package.json
-│   └── modulos/mysql
-│
-├── .gitignore
-└── README.md
+```bash
+npm install
+npm start      # producción: node index.js
+npm run dev     # desarrollo: nodemon index.js
 ```
 
-**Trabajo Práctico Integrador — Pio Chat**
-**5to año — Especialidad Informática**
+Corre en `http://localhost:4000` por defecto (`process.env.PORT`), con CORS habilitado para `http://localhost:3000` y `http://localhost:3001`.
+
+## Generar el ejecutable para entregar a los alumnos
+
+```bash
+npm run build   # genera build/backend-tp2.exe (Windows, sin necesidad de Node.js)
+```
+
+Ver `2do-cuatrimestre/evaluaciones/backend/Instrucciones-ejecutable.md` para troubleshooting del empaquetado con `pkg`.
