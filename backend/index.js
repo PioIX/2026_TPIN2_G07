@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const session = require("express-session");
 const { Server } = require("socket.io");
+const realizarQuery = require("./modulos/mysql");
 
 
 
@@ -80,22 +81,25 @@ io.on("connection", (socket) => {
 //1. REGISTRO
 
 app.post("/register", async function (req, res) {
-    console.log(req.body)
-    let respuesta = await realizarQuery(`
-    SELECT * FROM UsuariosWhatsapp WHERE nombre="${req.body.nombre}" and correo = "${req.body.correo}" and contraseña="${req.body.contraseña}";
-        `)
-    if (respuesta.length > 0) {
-        res.send({ message: "El usuario ya existe" })
-    } else {
+try {
+    const {nombre, correo,contraseña,foto_perfil} = req.body;
+    const existe = await realizarQuery(`
+      SELECT * FROM UsuariosWhatsapp WHERE  correo = ? `[correo]
+    );
+      if (existe.length > 0) {
+        return res.status(409).send({ ok: false, message: "El usuario ya existe"  })
+      } else {
         let resultado= await realizarQuery(`INSERT INTO UsuariosWhatsapp(nombre, correo, contraseña) VALUES ("${req.body.nombre}","${req.body.correo}","${req.body.contraseña}");`)
-        
-        const nuevoId = resultado.insertId; // Obtener el ID del nuevo usuario insertado
-        console.log("Nuevo usuario agregado con ID:", nuevoId);
-        res.send({ ok: true,
-                message: "Usuario Agregado", 
-                id_usuario: nuevoId })
-    }
-}) 
+          
+          const nuevoId = resultado.insertId; // Obtener el ID del nuevo usuario insertado
+          console.log("Nuevo usuario agregado con ID:", nuevoId);
+          res.send({ ok: true,
+                  message: "Usuario Agregado", 
+                  id_usuario: nuevoId })
+      }
+  }) catch (error) {
+  
+} 
 
 // SESION
 
@@ -103,8 +107,8 @@ app.post("/login", async function(req, res){
     try {
         console.log("Datos recibidos en sesión:", req.body);
         let respuesta = await realizarQuery(`
-            SELECT * FROM UsuariosWhatsapp WHERE correo = "${req.body.correo}" AND contraseña = "${req.body.contraseña}";
-        `);
+            SELECT * FROM UsuariosWhatsapp WHERE correo = ? AND contraseña = ?`, [req.body.correo, req.body.contraseña]
+        );
 
         if (respuesta.length > 0) {
             // Usamos id_usuario en minúsculas porque viene de la tabla Usuarios
@@ -140,7 +144,7 @@ app.get('/Chats/:id_usuario', async function (req, res) {
 
     const chatsConDatos = await Promise.all(
       chats.map(async(chat) =>{
-        const participantes = await realizarQuery(`SELECT u.id_usuario, u.nombre, u.foto_perfil FROM UsuarioEnChats uc INNER JOIN UsuariosWhatsapp u ON u.id_usuario = uc.id_usuario WHERE uc.id_chat =? AND uc.id_usuario !=?`,
+        const participantes = await realizarQuery(`SELECT u.id_usuario, u.nombre, u.foto_perfil FROM UsuariosEnChats uc INNER JOIN UsuariosWhatsapp u ON u.id_usuario = uc.id_usuario WHERE uc.id_chat =? AND uc.id_usuario !=?`,
           [chat.id_chat,id_usuario]
         );
         const esGrupal = participantes.length >1;
@@ -150,14 +154,10 @@ app.get('/Chats/:id_usuario', async function (req, res) {
           nombre_mostrado: esGrupal ? chat.nom_grupo : participantes[0]
         }
       })
-    )
+    ) 
     let respuesta;
-    if (req.query.id_preguntas != undefined) {
-        respuesta = await realizarQuery(`SELECT * FROM Mensajes WHERE id_usuario=${req.query.id_usuario}`)
-    } else {
-        respuesta = await realizarQuery("SELECT * FROM Mensajes");
-    }
-    res.send(respuesta);
+    
+    res.send(chatsConDatos);
   }
 
 });
