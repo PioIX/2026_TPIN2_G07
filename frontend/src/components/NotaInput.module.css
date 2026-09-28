@@ -1,0 +1,32 @@
+.contenedorInput {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.boton {
+  padding: 10px 16px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.boton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #d32f2f;
+  font-size: 14px;
+}
