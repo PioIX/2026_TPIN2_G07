@@ -1,0 +1,13 @@
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.cargando {
+  color: #757575;
+  font-size: 18px;
+}
