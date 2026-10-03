@@ -13,7 +13,8 @@ export default function RegisterPage({
   onNavigateToLogin,
 }) {
     const router = useRouter();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({f (data.ok === true) {
+    alert("¡Usuario registrado correctamente!");
     nombre: "",
     correo: "",
     contraseña: "",
@@ -43,6 +44,7 @@ export default function RegisterPage({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 
@@ -55,6 +57,8 @@ export default function RegisterPage({
 
         // Guardamos el ID del usuario
         localStorage.setItem("id_usuario", data.id_usuario);
+        
+        router.push("/");
 
         if (onRegisterSuccess) {
           onRegisterSuccess(data.id_usuario);

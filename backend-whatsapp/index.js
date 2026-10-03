@@ -44,31 +44,32 @@ let contador = 0;
 
 io.on("connection", (socket) => {
   const req = socket.request;
-
   socket.on("joinRoom", (data) => {
-    if (req.session.room != undefined && req.session.room.length > 0) {
-      socket.leave(req.session.room);
-    }
-    req.session.room = data.room;
-    socket.join(req.session.room);
 
-    io.to(req.session.room).emit("chat-messages", {
-      user: req.session.user,
-      room: req.session.room,
-    });
-  });
+  if (
+    req.session.room != undefined &&
+    req.session.room.length > 0
+  ) {
+    socket.leave(req.session.room);
+  }
+
+  req.session.room = data.room;
+
+  socket.join(req.session.room);
+
+  console.log(
+    "Usuario entró al chat:",
+    req.session.room
+  );
+
+});
 
   socket.on("pingAll", (data) => {
     console.log("PING ALL:", data);
     io.emit("pingAll", { event: "Ping to all", message: data });
   });
 
-  socket.on("sendMessage", (data) => {
-    io.to(req.session.room).emit("newMessage", {
-      room: req.session.room,
-      message: data.message,
-    });
-  });
+
 
 
 
@@ -114,7 +115,7 @@ app.post("/register", async function name(req,res) {
     if(respuesta.length > 0){
       res.send({message:"El usuario ya existe"});
     }else{
-      let resultado = await realizarQuery(`INSERT INTO UsuariosWhatsap(nombre,correo,contraseña,foto) VALUES ("${req.body.nombre}","${req.body.correo}","${req.body.contraseña}","${req.body.foto}");`)
+      let resultado = await realizarQuery(`INSERT INTO UsuariosWhatsapp(nombre,correo,contraseña,foto) VALUES ("${req.body.nombre}","${req.body.correo}","${req.body.contraseña}","${req.body.foto}");`)
 
       const nuevoId= resultado.insertId;
       res.send({
@@ -138,6 +139,12 @@ app.post("/login", async function (req,res) {
 
     if(respuesta.length > 0){
       const idDetectado = respuesta[0].id_usuario;
+      
+      req.session.user = {
+      id_usuario: idDetectado,
+      nombre: respuesta[0].nombre,
+      correo: respuesta[0].correo,
+    };
 
       res.send({
         message:"Inicio de sesion hecho",
@@ -156,23 +163,54 @@ app.post("/login", async function (req,res) {
 });
 
 // LISTADO DE CHATS:
-app.get("/chats/:id_usuario", async function(req, res) {
-    try {
-        const { id_usuario } = req.params;
-        const chats = await realizarQuery(`
-            SELECT c.id_chat, c.nom_grupo, 
-                   u.foto AS foto_contacto, u.nombre AS nombre_contacto
-            FROM UsuarioEnChats uec
-            JOIN Chats c ON uec.id_chat = c.id_chat
-            LEFT JOIN UsuarioEnChats uec2 ON c.id_chat = uec2.id_chat AND uec2.id_usuario != ?
-            LEFT JOIN UsuariosWhatsapp u ON uec2.id_usuario = u.id_usuario
-            WHERE uec.id_usuario = ?
-        `, [id_usuario, id_usuario]);
+app.get("/chats/:id_usuario", async function (req, res) {
+  try {
+    const { id_usuario } = req.params;
 
-        res.send({ ok: true, chats });
-    } catch (error) {
-        res.status(500).send({ message: "Error al listar chats", error: error.message });
-    }
+    const chats = await realizarQuery(
+      `
+      SELECT 
+        c.id_chat,
+        c.nom_grupo,
+
+        COALESCE(
+          uec.foto_grupo,
+          u.foto
+        ) AS foto_contacto,
+
+        u.nombre AS nombre_contacto
+
+      FROM UsuarioEnChats uec
+
+      JOIN Chats c
+        ON uec.id_chat = c.id_chat
+
+      LEFT JOIN UsuarioEnChats uec2
+        ON c.id_chat = uec2.id_chat
+        AND uec2.id_usuario != ?
+
+      LEFT JOIN UsuariosWhatsapp u
+        ON uec2.id_usuario = u.id_usuario
+
+      WHERE uec.id_usuario = ?
+      `,
+      [id_usuario, id_usuario]
+    );
+
+    res.send({
+      ok: true,
+      chats,
+    });
+
+  } catch (error) {
+
+    res.status(500).send({
+      message: "Error al listar chats",
+      error: error.message,
+    });
+
+  }
+});
 });
 
 
@@ -201,31 +239,64 @@ app.post("/chat/individual", async function(req, res) {
 });
 
 //CREACION DE CHAT DE GRUPO:
-app.post("/chat/grupal", async function(req, res) {
-    try {
-        const { nom_grupo, id_usuario_creador, correos, foto_grupo } = req.body;
-
-        const resultadoChat = await realizarQuery(`INSERT INTO Chats (nom_grupo) VALUES (?)`, [nom_grupo]);
-        const id_chat = resultadoChat.insertId;
-
-        await realizarQuery(`INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`, 
-            [id_chat, id_usuario_creador, foto_grupo || null]);
-
-        if (correos && correos.length > 0) {
-            for (let correo of correos) {
-                const usuario = await realizarQuery(`SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = ?`, [correo]);
-                if (usuario.length > 0) {
-                    await realizarQuery(`INSERT INTO UsuarioEnChats (id_chat, id_usuario) VALUES (?, ?)`, [id_chat, usuario[0].id_usuario]);
-                }
-            }
-        }
-
-        res.send({ ok: true, message: "Chat grupal creado con éxito", id_chat });
-    } catch (error) {
-        res.status(500).send({ message: "Error al crear chat grupal", error: error.message });
+app.post("/chat/grupal", async function (req, res) {
+  try {
+    const {nom_grupo, id_usuario_creador, correos, foto_grupo} = req.body;
+    if (!nom_grupo || !id_usuario_creador) {
+      return res.status(400).send({
+        message: "Faltan datos del grupo"
+      });
     }
-});
+    const usuarios = [];
+    for (const correo of correos || []) {
+      const usuario = await realizarQuery( `SELECT id_usuario FROM UsuariosWhatsappWHERE correo = ?`, [correo]);
+      if (usuario.length === 0) {
 
+        return res.status(404).send({
+          message:
+            `El usuario ${correo} no existe`
+        });
+
+      }
+
+      usuarios.push(usuario[0].id_usuario);
+    }
+
+    const resultadoChat = await realizarQuery(`INSERT INTO Chats (nom_grupo) VALUES (?)`,[nom_grupo]);
+    const id_chat = resultadoChat.insertId; await realizarQuery(`INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
+      [
+        id_chat,
+        id_usuario_creador,
+        foto_grupo || null
+      ]
+    );
+
+    for (const idUsuario of usuarios) {
+      await realizarQuery(
+        `INSERT INTO UsuarioEnChats
+         (id_chat, id_usuario)
+         VALUES (?, ?)`,
+        [
+          id_chat,
+          idUsuario
+        ]
+      );
+
+    }
+    res.send({
+      ok: true,
+      message:
+        "Chat grupal creado con éxito",
+      id_chat
+    });
+  } catch (error) {
+    res.status(500).send({
+      message:
+        "Error al crear chat grupal",
+      error: error.message
+    });
+  }
+});
 
 
 // HISTORIAL:
