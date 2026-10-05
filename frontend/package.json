@@ -5,6 +5,7 @@
   "scripts": {
     "dev:a": "cross-env NEXT_DIST_DIR=.next-a PORT=3000 next dev",
     "dev:b": "cross-env NEXT_DIST_DIR=.next-b PORT=3001 next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

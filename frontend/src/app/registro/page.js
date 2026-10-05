@@ -9,12 +9,12 @@ import styles from "../Auth.module.css";
 
 export default function RegisterPage({
     
-  onRegisterSuccess,
+  nRegisterSuccess,
   onNavigateToLogin,
 }) {
-    const router = useRouter();
-  const [formData, setFormData] = useState({f (data.ok === true) {
-    alert("¡Usuario registrado correctamente!");
+  const router = useRouter();
+  
+  const [formData, setFormData] = useState({
     nombre: "",
     correo: "",
     contraseña: "",
@@ -22,6 +22,7 @@ export default function RegisterPage({
   });
 
   const [mensajeError, setMensajeError] = useState("");
+
 
   useEffect(() => {
     document.title = "WhatsApp Pio - Registrarse";

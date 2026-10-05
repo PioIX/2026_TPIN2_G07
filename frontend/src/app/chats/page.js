@@ -4,12 +4,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Popup from "reactjs-popup";
-
+import styles from "./page.module.css";
 import ChatList from "@/components/ChatList";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
 
-import styles from "./Chats.module.css";
+
 
 export default function ChatsPage() {
   const router = useRouter();
