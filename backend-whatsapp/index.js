@@ -181,6 +181,7 @@ app.get("/chats/:id_usuario", async function (req, res) {
       LEFT JOIN UsuarioEnChats uec2
         ON c.id_chat = uec2.id_chat
         AND uec2.id_usuario != ?
+        AND uec2.id_usuario != ${id_usuario}
 
       LEFT JOIN UsuariosWhatsapp u
         ON uec2.id_usuario = u.id_usuario
@@ -188,6 +189,8 @@ app.get("/chats/:id_usuario", async function (req, res) {
       WHERE uec.id_usuario = ?
       `,
       [id_usuario, id_usuario]
+      WHERE uec.id_usuario = ${id_usuario}
+      `
     );
 
     res.send({
@@ -201,6 +204,7 @@ app.get("/chats/:id_usuario", async function (req, res) {
     });
   }
 });
+<<<<<<< HEAD
 
 // CREACION DE CHAT INDIVIDUAL:
 app.post("/chat/individual", async function (req, res) {
@@ -210,6 +214,31 @@ app.post("/chat/individual", async function (req, res) {
     const destinatario = await realizarQuery(`SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = ?`, [correo_destinatario]);
     if (destinatario.length === 0) {
       return res.status(404).send({ message: "El usuario destinatario no existe" });
+=======
+
+
+
+
+// CREACION DE CHAT INDIVIDUAL:
+app.post("/chat/individual", async function(req, res) {
+    try {
+        const { id_usuario_creador, correo_destinatario } = req.body;
+        
+        const destinatario = await realizarQuery(`SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = "${correo_destinatario}"`);
+        if (destinatario.length === 0) {
+            return res.status(404).send({ message: "El usuario destinatario no existe" });
+        }
+        const id_destinatario = destinatario[0].id_usuario;
+
+        const resultadoChat = await realizarQuery(`INSERT INTO Chats (nom_grupo) VALUES (NULL)`);
+        const id_chat = resultadoChat.insertId;
+
+        await realizarQuery(`INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (${id_chat}, ${id_usuario_creador},""), (${id_chat}, ${id_destinatario},"")`);
+
+        res.send({ ok: true, message: "Chat creado con éxito", id_chat });
+    } catch (error) {
+        res.status(500).send({ message: "Error al crear chat individual", error: error.message });
+>>>>>>> a09f0ed6bde2464a12f95feae8e361d0c503372e
     }
     const id_destinatario = destinatario[0].id_usuario;
 

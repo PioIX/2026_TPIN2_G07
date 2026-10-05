@@ -6,8 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import Message from "@/components/Message";
 import Button from "@/components/Button";
-
-import styles from "../Chat.module.css";
+import styles from "../../Chats.module.css";
 
 export default function ChatPage() {
   const params = useParams();

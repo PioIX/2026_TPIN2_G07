@@ -6,7 +6,10 @@ import Input from "@/components/Input";
 import Button from "@/components/Button";
 import styles from "../Auth.module.css";
 
+export default function RegisterPage() {
+  const router = useRouter();
 
+<<<<<<< HEAD
 export default function RegisterPage({
     
   nRegisterSuccess,
@@ -14,6 +17,8 @@ export default function RegisterPage({
 }) {
   const router = useRouter();
   
+=======
+>>>>>>> a09f0ed6bde2464a12f95feae8e361d0c503372e
   const [formData, setFormData] = useState({
     nombre: "",
     correo: "",
@@ -22,6 +27,7 @@ export default function RegisterPage({
   });
 
   const [mensajeError, setMensajeError] = useState("");
+  const [cargando, setCargando] = useState(false);
 
 
   useEffect(() => {
@@ -37,17 +43,40 @@ export default function RegisterPage({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setMensajeError("");
 
+    if (!formData.nombre.trim()) {
+      setMensajeError("Ingresá tu nombre.");
+      return;
+    }
+
+    if (!formData.correo.trim()) {
+      setMensajeError("Ingresá tu correo.");
+      return;
+    }
+
+    if (!formData.contraseña.trim()) {
+      setMensajeError("Ingresá una contraseña.");
+      return;
+    }
+
+    setCargando(true);
+
     try {
+      console.log("Enviando datos:", formData);
+
       const respuesta = await fetch("http://localhost:4000/register", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
+
         body: JSON.stringify(formData),
       });
+
+      console.log("Estado del servidor:", respuesta.status);
 
       const data = await respuesta.json();
 
@@ -56,31 +85,34 @@ export default function RegisterPage({
       if (data.ok === true) {
         alert("¡Usuario registrado correctamente!");
 
-        // Guardamos el ID del usuario
-        localStorage.setItem("id_usuario", data.id_usuario);
-        
-        router.push("/");
+        localStorage.setItem(
+          "id_usuario",
+          data.id_usuario
+        );
 
-        if (onRegisterSuccess) {
-          onRegisterSuccess(data.id_usuario);
-        }
+        router.push("/");
       } else {
         setMensajeError(
           data.message || "No se pudo registrar el usuario."
         );
       }
+
     } catch (error) {
-      console.error("Error en registro:", error);
+      console.error("Error en el fetch:", error);
 
       setMensajeError(
-        "No se pudo conectar con el servidor backend."
+        "No se pudo conectar con el servidor."
       );
+
+    } finally {
+      setCargando(false);
     }
   };
 
   return (
     <div className={styles.contenedor}>
       <div className={styles.tarjeta}>
+
         <h1>Registrarse</h1>
 
         {mensajeError && (
@@ -90,6 +122,7 @@ export default function RegisterPage({
         )}
 
         <form onSubmit={handleSubmit}>
+
           <Input
             label="Nombre"
             type="text"
@@ -127,20 +160,23 @@ export default function RegisterPage({
           />
 
           <Button
-            text="Registrarse"
+            text={cargando ? "Registrando..." : "Registrarse"}
             type="submit"
           />
+
         </form>
 
         <p className={styles.cambioVista}>
           ¿Ya tienes una cuenta?{" "}
-        <span
+
+          <span
             onClick={() => router.push("/")}
             className={styles.enlace}
-        >
+          >
             Inicia sesión aquí
-        </span>
+          </span>
         </p>
+
       </div>
     </div>
   );

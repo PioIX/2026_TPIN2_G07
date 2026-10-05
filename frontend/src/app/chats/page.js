@@ -9,7 +9,11 @@ import ChatList from "@/components/ChatList";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
 
+<<<<<<< HEAD
 
+=======
+import styles from "../Chats.module.css";
+>>>>>>> a09f0ed6bde2464a12f95feae8e361d0c503372e
 
 export default function ChatsPage() {
   const router = useRouter();
@@ -54,6 +58,8 @@ export default function ChatsPage() {
 
   function abrirChat(idChat) {
     router.push(`/chat/${idChat}`);
+  
+    router.push(`/chats/${idChat}`);
   }
 
   async function crearChat() {
