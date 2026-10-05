@@ -17,7 +17,7 @@ export default function ChatItem({chat,onClick,}) {
   return (
     <div
       className={styles.chat}
-      onClick={() => onClick(chat.id_chat)}
+      onClick={() => onClick(chat.id_chat || chat.id)}
     >
       <img
         src={foto}
