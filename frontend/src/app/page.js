@@ -38,6 +38,7 @@ export default function LoginPage({ onLoginSuccess }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
+  
       });
 
       const data = await respuesta.json();
@@ -49,13 +50,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
         localStorage.setItem("id_usuario", data.id_usuario);
 
-        if (onLoginSuccess) {
-          onLoginSuccess(data.id_usuario);
-        }
-      } else {
-        setMensajeError(
-          data.message || "Credenciales inválidas."
-        );
+        router.push("/chats");
       }
     } catch (error) {
       console.error("Error al iniciar sesión:", error);

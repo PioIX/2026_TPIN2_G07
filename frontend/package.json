@@ -5,6 +5,7 @@
   "scripts": {
     "dev:a": "cross-env NEXT_DIST_DIR=.next-a PORT=3000 next dev",
     "dev:b": "cross-env NEXT_DIST_DIR=.next-b PORT=3001 next dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -15,6 +16,7 @@
     "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "reactjs-popup": "^2.0.6",
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
