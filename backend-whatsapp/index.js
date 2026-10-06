@@ -156,7 +156,6 @@ app.post("/login", async function (req, res) {
 });
 
 // LISTADO DE CHATS:
-// LISTADO DE CHATS:
 app.get("/chats/:id_usuario", async function (req, res) {
   try {
     const { id_usuario } = req.params;
@@ -228,26 +227,26 @@ app.post("/chat/individual", async function (req, res) {
 
     const id_destinatario = destinatarios[0].id_usuario;
 
-    // VALIDACIÓN CLAVE: Evitar crear un chat consigo mismo
+    
     if (Number(id_usuario_creador) === Number(id_destinatario)) {
       return res.status(400).send({
         message: "No puedes crear un chat individual contigo mismo"
       });
     }
 
-    // 2. Crear la cabecera del chat (nom_grupo = NULL para individual)
+   
     const resultadoChat = await realizarQuery(
       `INSERT INTO Chats (nom_grupo) VALUES (NULL)`
     );
     const id_chat = resultadoChat.insertId;
 
-    // 3. Insertar al CREADOR en UsuarioEnChats
+
     await realizarQuery(
       `INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
       [id_chat, id_usuario_creador, ""]
     );
 
-    // 4. Insertar al DESTINATARIO en UsuarioEnChats (¡Asegúrate de pasar id_destinatario!)
+    //Insertar al DESTINATARIO en UsuarioEnChats 
     await realizarQuery(
       `INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
       [id_chat, id_destinatario, ""]
