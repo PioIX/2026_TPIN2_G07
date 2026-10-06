@@ -9,7 +9,6 @@ import styles from "../Auth.module.css";
 export default function RegisterPage() {
   const router = useRouter();
 
-<<<<<<< HEAD
 export default function RegisterPage({
     
   nRegisterSuccess,
@@ -17,8 +16,6 @@ export default function RegisterPage({
 }) {
   const router = useRouter();
   
-=======
->>>>>>> a09f0ed6bde2464a12f95feae8e361d0c503372e
   const [formData, setFormData] = useState({
     nombre: "",
     correo: "",

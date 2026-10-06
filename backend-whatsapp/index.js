@@ -156,6 +156,7 @@ app.post("/login", async function (req, res) {
 });
 
 // LISTADO DE CHATS:
+// LISTADO DE CHATS:
 app.get("/chats/:id_usuario", async function (req, res) {
   try {
     const { id_usuario } = req.params;
@@ -166,31 +167,33 @@ app.get("/chats/:id_usuario", async function (req, res) {
         c.id_chat,
         c.nom_grupo,
 
+        -- 1. Buscamos la foto del contacto o la foto del grupo
         COALESCE(
-          uec.foto_grupo,
-          u.foto
+          NULLIF(uec.foto_grupo, ''),
+          u_otro.foto
         ) AS foto_contacto,
 
-        u.nombre AS nombre_contacto
+        -- 2. Traemos explícitamente el nombre del OTRO usuario
+        u_otro.nombre AS nombre_contacto
 
       FROM UsuarioEnChats uec
 
-      JOIN Chats c
+      JOIN Chats c 
         ON uec.id_chat = c.id_chat
 
-      LEFT JOIN UsuarioEnChats uec2
-        ON c.id_chat = uec2.id_chat
-        AND uec2.id_usuario != ?
-        AND uec2.id_usuario != ${id_usuario}
-
-      LEFT JOIN UsuariosWhatsapp u
-        ON uec2.id_usuario = u.id_usuario
+      -- Obtenemos directamente los datos del OTRO usuario registrado en el chat
+      LEFT JOIN UsuariosWhatsapp u_otro
+        ON u_otro.id_usuario = (
+          SELECT uec_sub.id_usuario 
+          FROM UsuarioEnChats uec_sub
+          WHERE uec_sub.id_chat = c.id_chat 
+            AND uec_sub.id_usuario != ?
+          LIMIT 1
+        )
 
       WHERE uec.id_usuario = ?
       `,
       [id_usuario, id_usuario]
-      WHERE uec.id_usuario = ${id_usuario}
-      `
     );
 
     res.send({
@@ -204,99 +207,111 @@ app.get("/chats/:id_usuario", async function (req, res) {
     });
   }
 });
-<<<<<<< HEAD
+
 
 // CREACION DE CHAT INDIVIDUAL:
 app.post("/chat/individual", async function (req, res) {
   try {
     const { id_usuario_creador, correo_destinatario } = req.body;
 
-    const destinatario = await realizarQuery(`SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = ?`, [correo_destinatario]);
-    if (destinatario.length === 0) {
-      return res.status(404).send({ message: "El usuario destinatario no existe" });
-=======
+    // 1. Buscar al destinatario por correo
+    const destinatarios = await realizarQuery(
+      `SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = ?`,
+      [correo_destinatario]
+    );
 
-
-
-
-// CREACION DE CHAT INDIVIDUAL:
-app.post("/chat/individual", async function(req, res) {
-    try {
-        const { id_usuario_creador, correo_destinatario } = req.body;
-        
-        const destinatario = await realizarQuery(`SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = "${correo_destinatario}"`);
-        if (destinatario.length === 0) {
-            return res.status(404).send({ message: "El usuario destinatario no existe" });
-        }
-        const id_destinatario = destinatario[0].id_usuario;
-
-        const resultadoChat = await realizarQuery(`INSERT INTO Chats (nom_grupo) VALUES (NULL)`);
-        const id_chat = resultadoChat.insertId;
-
-        await realizarQuery(`INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (${id_chat}, ${id_usuario_creador},""), (${id_chat}, ${id_destinatario},"")`);
-
-        res.send({ ok: true, message: "Chat creado con éxito", id_chat });
-    } catch (error) {
-        res.status(500).send({ message: "Error al crear chat individual", error: error.message });
->>>>>>> a09f0ed6bde2464a12f95feae8e361d0c503372e
+    if (destinatarios.length === 0) {
+      return res.status(404).send({
+        message: "El usuario destinatario no existe"
+      });
     }
-    const id_destinatario = destinatario[0].id_usuario;
 
-    const resultadoChat = await realizarQuery(`INSERT INTO Chats (nom_grupo) VALUES (NULL)`);
+    const id_destinatario = destinatarios[0].id_usuario;
+
+    // VALIDACIÓN CLAVE: Evitar crear un chat consigo mismo
+    if (Number(id_usuario_creador) === Number(id_destinatario)) {
+      return res.status(400).send({
+        message: "No puedes crear un chat individual contigo mismo"
+      });
+    }
+
+    // 2. Crear la cabecera del chat (nom_grupo = NULL para individual)
+    const resultadoChat = await realizarQuery(
+      `INSERT INTO Chats (nom_grupo) VALUES (NULL)`
+    );
     const id_chat = resultadoChat.insertId;
 
-    await realizarQuery(`INSERT INTO UsuarioEnChats (id_chat, id_usuario) VALUES (?, ?), (?, ?)`,
-      [id_chat, id_usuario_creador, id_chat, id_destinatario]);
+    // 3. Insertar al CREADOR en UsuarioEnChats
+    await realizarQuery(
+      `INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
+      [id_chat, id_usuario_creador, ""]
+    );
 
-    res.send({ ok: true, message: "Chat creado con éxito", id_chat });
+    // 4. Insertar al DESTINATARIO en UsuarioEnChats (¡Asegúrate de pasar id_destinatario!)
+    await realizarQuery(
+      `INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
+      [id_chat, id_destinatario, ""]
+    );
+
+    res.send({
+      ok: true,
+      message: "Chat individual creado con éxito",
+      id_chat
+    });
   } catch (error) {
-    res.status(500).send({ message: "Error al crear chat individual", error: error.message });
+    res.status(500).send({
+      message: "Error al crear chat individual",
+      error: error.message
+    });
   }
 });
+
 
 // CREACION DE CHAT DE GRUPO:
 app.post("/chat/grupal", async function (req, res) {
   try {
     const { nom_grupo, id_usuario_creador, correos, foto_grupo } = req.body;
     if (!nom_grupo || !id_usuario_creador) {
-      return res.status(400).send({
-        message: "Faltan datos del grupo"
-      });
+      return res.status(400).send({ message: "Faltan datos del grupo" });
     }
+
     const usuarios = [];
     for (const correo of correos || []) {
-      const usuario = await realizarQuery(`SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = ?`, [correo]);
+      const usuario = await realizarQuery(
+        `SELECT id_usuario FROM UsuariosWhatsapp WHERE correo = ?`,
+        [correo]
+      );
+
       if (usuario.length === 0) {
-        return res.status(404).send({
-          message: `El usuario ${correo} no existe`
-        });
+        return res.status(404).send({ message: `El usuario ${correo} no existe` });
       }
 
-      usuarios.push(usuario[0].id_usuario);
+      // Evitamos agregar al creador dos veces si su correo vino en el array
+      if (usuario[0].id_usuario !== Number(id_usuario_creador)) {
+        usuarios.push(usuario[0].id_usuario);
+      }
     }
 
-    const resultadoChat = await realizarQuery(`INSERT INTO Chats (nom_grupo) VALUES (?)`, [nom_grupo]);
+    const resultadoChat = await realizarQuery(
+      `INSERT INTO Chats (nom_grupo) VALUES (?)`,
+      [nom_grupo]
+    );
     const id_chat = resultadoChat.insertId;
 
-    await realizarQuery(`INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
-      [
-        id_chat,
-        id_usuario_creador,
-        foto_grupo || null
-      ]
+    // Insertar al creador del grupo
+    await realizarQuery(
+      `INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
+      [id_chat, id_usuario_creador, foto_grupo || ""]
     );
 
+    // Insertar al resto de los integrantes (sin duplicar al creador)
     for (const idUsuario of usuarios) {
       await realizarQuery(
-        `INSERT INTO UsuarioEnChats
-         (id_chat, id_usuario)
-         VALUES (?, ?)`,
-        [
-          id_chat,
-          idUsuario
-        ]
+        `INSERT INTO UsuarioEnChats (id_chat, id_usuario, foto_grupo) VALUES (?, ?, ?)`,
+        [id_chat, idUsuario, ""]
       );
     }
+
     res.send({
       ok: true,
       message: "Chat grupal creado con éxito",

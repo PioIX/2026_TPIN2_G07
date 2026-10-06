@@ -4,16 +4,11 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Popup from "reactjs-popup";
-import styles from "./page.module.css";
+import styles from "../Chats.module.css";
 import ChatList from "@/components/ChatList";
 import Input from "@/components/Input";
 import Button from "@/components/Button";
 
-<<<<<<< HEAD
-
-=======
-import styles from "../Chats.module.css";
->>>>>>> a09f0ed6bde2464a12f95feae8e361d0c503372e
 
 export default function ChatsPage() {
   const router = useRouter();
@@ -103,55 +98,56 @@ export default function ChatsPage() {
     }
   }
 
-  async function crearGrupo() {
-    setMensaje("");
+ async function crearGrupo() {
+  setMensaje("");
 
-    if (!nombreGrupo) {
-      setMensaje("Ingresá un nombre para el grupo.");
+  if (!nombreGrupo) {
+    setMensaje("Ingresá un nombre para el grupo.");
+    return;
+  }
+
+  const correos = correosGrupo
+    .split(",")
+    .map((correo) => correo.trim())
+    .filter((correo) => correo !== "");
+
+  try {
+    const respuesta = await fetch(
+      "http://localhost:4000/chat/grupal",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nom_grupo: nombreGrupo,
+          id_usuario_creador: Number(idUsuario),
+          correos,
+          foto_grupo: fotoGrupo ? fotoGrupo.trim() : "", // Si no hay foto, envía "" en lugar de null
+        }),
+      }
+    );
+
+    const data = await respuesta.json();
+
+    if (!respuesta.ok) {
+      setMensaje(data.message || "Error al crear el grupo.");
       return;
     }
 
-    const correos = correosGrupo
-      .split(",")
-      .map((correo) => correo.trim())
-      .filter((correo) => correo !== "");
+    setNombreGrupo("");
+    setCorreosGrupo("");
+    setFotoGrupo("");
 
-    try {
-      const respuesta = await fetch(
-        "http://localhost:4000/chat/grupal",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            nom_grupo: nombreGrupo,
-            id_usuario_creador: Number(idUsuario),
-            correos,
-            foto_grupo: fotoGrupo,
-          }),
-        }
-      );
+    await cargarChats(idUsuario);
 
-      const data = await respuesta.json();
-
-      if (!respuesta.ok) {
-        setMensaje(data.message);
-        return;
-      }
-
-      setNombreGrupo("");
-      setCorreosGrupo("");
-      setFotoGrupo("");
-
-      await cargarChats(idUsuario);
-
-      alert("Grupo creado correctamente.");
-    } catch (error) {
-      console.error(error);
-      setMensaje("Error al crear el grupo.");
-    }
+    alert("Grupo creado correctamente.");
+  } catch (error) {
+    console.error(error);
+    setMensaje("Error al crear el grupo.");
   }
+}
+
 
   return (
     <main className={styles.pagina}>
